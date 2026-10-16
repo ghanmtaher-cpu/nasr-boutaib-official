@@ -1,7 +1,6 @@
-/* إعداد اختياري لربط Supabase.
-   ضع Project URL و anon/publishable key هنا بعد إنشاء المشروع.
-   لا تضع service_role key في ملفات الموقع العامة أبدًا. */
+/* إعدادات الاتصال العامة فقط.
+   ممنوع وضع service_role أو أي مفتاح سري في ملفات الموقع العامة. */
 window.SITE_CONFIG = {
-  supabaseUrl: "",
-  supabaseAnonKey: ""
+  supabaseUrl: "https://xqkciowfukqnrvduzhyu.supabase.co",
+  supabaseAnonKey: "sb_publishable_2NBdA37IqxmivHrVRbOP4A_Gcwka9_G"
 };
