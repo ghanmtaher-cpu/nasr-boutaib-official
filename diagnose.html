@@ -1,0 +1,49 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>فحص الموقع</title>
+<style>body{font-family:Tahoma,Arial,sans-serif;max-width:640px;margin:0 auto;padding:16px;line-height:1.8;background:#f6f5ef;color:#14211b}input,button{font:inherit;padding:10px;margin:4px 0;width:100%;box-sizing:border-box}button{background:#123d32;color:#fff;border:0;border-radius:8px}ul{padding:0}li{margin:8px 0;list-style:none;background:#fff;border-radius:8px;padding:8px 12px}.ok{color:#0a7a3d}.no{color:#b3261e}.w{color:#8a6100}small{color:#555}</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script></head><body>
+<h2>فحص اتصال الموقع</h2>
+<p>تفحص هذه الصفحة الإعدادات وقاعدة البيانات وصلاحيات الإدارة ورفع الفيديو. تُنشئ مقالًا تجريبيًا مؤقتًا وملفًا صغيرًا ثم تحذفهما فلا يتأثر محتواك. اترك البريد وكلمة المرور فارغين لفحص الجزء العام فقط.</p>
+<input id="em" type="email" placeholder="بريد حساب الإدارة (اختياري)" autocomplete="username"><input id="pw" type="password" placeholder="كلمة المرور (اختياري)" autocomplete="current-password"><button id="go">ابدأ الفحص</button><ul id="out"></ul>
+<script src="config.js"></script>
+<script>
+const out=document.getElementById("out");
+function log(s,m,h){const li=document.createElement("li");li.className=s===true?"ok":s===false?"no":"w";li.innerHTML=(s===true?"✔ ":s===false?"✘ ":"⚠ ")+m+(h?"<br><small>"+h+"</small>":"");out.appendChild(li)}
+async function run(){
+out.innerHTML="";const c=window.SITE_CONFIG||{};
+if(!c.supabaseUrl||!c.supabaseAnonKey||/PASTE_YOUR/i.test(c.supabaseAnonKey)){log(false,"ملف config.js ينقصه رابط المشروع أو المفتاح العام الحقيقي.","افتح config.js في GitHub وضع المفتاح publishable أو anon.");return}
+if(/service_role|secret/i.test(c.supabaseAnonKey)||c.supabaseAnonKey.startsWith("sb_secret_")){log(false,"تحذير خطير: يبدو أن المفتاح في config.js مفتاح سري.","احذفه فورًا واستبدله بالمفتاح العام.");return}
+log(true,"ملف config.js فيه رابط ومفتاح.");
+if(!window.supabase){log(false,"لم تُحمَّل مكتبة Supabase (تحقق من الإنترنت).");return}
+const sb=window.supabase.createClient(c.supabaseUrl,c.supabaseAnonKey,{auth:{persistSession:false}});
+const pub=window.supabase.createClient(c.supabaseUrl,c.supabaseAnonKey,{auth:{persistSession:false}});
+const cols="id,title,category,summary,body,status,published_at,created_at,updated_at,author_id,question_text,author,sources,content_type,review_status,video_url";
+let r=await pub.from("articles").select(cols,{count:"exact"}).eq("status","published").limit(1);
+if(r.error)log(false,"قراءة المقالات المنشورة فشلت: "+r.error.message,"غالبًا عمود ناقص أو صلاحية قراءة غير مفعّلة. أرسل لي هذه الرسالة.");
+else{log(true,"قراءة المقالات المنشورة تعمل، وكل الأعمدة موجودة.");log(r.count?true:"w","عدد المقالات المنشورة الآن: "+(r.count||0),r.count?"":"لن يظهر في الموقع شيء حتى تنشر مقالًا.")}
+const em=document.getElementById("em").value.trim(),pw=document.getElementById("pw").value;
+if(!em||!pw){log("w","تخطّيت فحص الإدارة لأنك لم تكتب البريد وكلمة المرور.");return}
+const s=await sb.auth.signInWithPassword({email:em,password:pw});
+if(s.error){log(false,"تسجيل الدخول فشل: "+s.error.message,"تأكد من البريد وكلمة المرور، ومن تفعيل Auto Confirm User.");return}
+log(true,"تسجيل الدخول نجح.");const uid=s.data.user.id;
+r=await sb.from("admin_users").select("user_id").eq("user_id",uid);
+if(r.error||!r.data||!r.data.length){log(false,"حسابك غير مسجّل مشرفًا في جدول admin_users.","هذا UUID حسابك: "+uid+" — أضفه بأمر insert into public.admin_users.");await sb.auth.signOut();return}
+log(true,"حسابك مسجّل مشرفًا.");
+r=await sb.from("articles").insert({title:"فحص تلقائي - سيُحذف",category:"فحص",body:"x",status:"draft",author_id:uid}).select("id").single();
+if(r.error){log(false,"الإضافة فشلت: "+r.error.message,"صلاحية الإضافة للمشرف غير صحيحة.")}
+else{const id=r.data.id;log(true,"إضافة مقال تعمل.");
+ const v=await pub.from("articles").select("id").eq("id",id);
+ log(!(v.data&&v.data.length),(v.data&&v.data.length)?"المسودة ظهرت للزوار! الحماية ناقصة.":"المسودات مخفية عن الزوار كما يجب.");
+ const u=await sb.from("articles").update({summary:"ok"}).eq("id",id).select("id");
+ log(!u.error&&u.data&&u.data.length>0,u.error?"التعديل فشل: "+u.error.message:"تعديل المقال يعمل.");
+ const d=await sb.from("articles").delete().eq("id",id).select("id");
+ log(!d.error&&d.data&&d.data.length>0,d.error?"الحذف فشل: "+d.error.message:"حذف المقال يعمل.")}
+const p="diagnose-"+Date.now()+".mp4";
+const up=await sb.storage.from("videos").upload(p,new Blob(["x"],{type:"video/mp4"}),{contentType:"video/mp4"});
+if(up.error)log(false,"رفع الفيديو فشل: "+up.error.message,"تأكد من تنفيذ الجزء الثاني من SQL (مخزن videos وسياساته).");
+else{log(true,"رفع الفيديو يعمل.");const url=sb.storage.from("videos").getPublicUrl(p).data.publicUrl;
+ try{const f=await fetch(url);log(f.ok,f.ok?"الفيديوهات المرفوعة تُقرأ علنًا للزوار.":"الملف المرفوع لا يُقرأ علنًا (حالة "+f.status+"). المخزن ليس عامًّا.")}catch(e){log("w","تعذّر اختبار القراءة العلنية.")}
+ const rm=await sb.storage.from("videos").remove([p]);log(!rm.error,rm.error?"حذف الفيديو فشل: "+rm.error.message:"حذف الفيديو يعمل.")}
+await sb.auth.signOut();log(true,"انتهى الفحص. أرسل لي صورة للنتيجة كاملة.");
+}
+document.getElementById("go").onclick=()=>run().catch(e=>log(false,"خطأ غير متوقع: "+e.message));
+</script></body></html>
