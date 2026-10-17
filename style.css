@@ -44,4 +44,12 @@ footer{background:#0d3027;color:#d9e5de;border-top:4px solid var(--gold)}footer 
 @media(max-width:780px){.topbar .wrap>span:first-child{display:none}.topbar .wrap{justify-content:center}}
 @media(max-width:600px){nav{display:none}nav.open{display:flex;flex-direction:column;align-items:stretch}.brand-name{font-size:21px}.brand-tag{display:none}.nav-cta{margin:6px 0 0;text-align:center}.hero{padding:36px 16px 40px}.searchbox{background:transparent;box-shadow:none}}
 
-.video-box{position:relative;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;margin:0 0 18px}.video-box iframe,.video-box video{position:absolute;inset:0;width:100%;height:100%;border:0}
+/* هوية دعوية: ليل وفجر */
+:root{--green:#16264d;--green2:#2a4380;--gold:#d9a441;--soft:#eef1f9;--line:#dde3f0;--paper:#f6f7fb;--muted:#5f6b85}
+body{background:var(--paper)}
+.hero{overflow:hidden;background:radial-gradient(ellipse 80% 70% at 75% 115%,#f0a84a66 0,transparent 62%),radial-gradient(circle at 12% 0,#4468b855 0,transparent 52%),linear-gradient(172deg,#0a1330 0%,#16264d 55%,#2a4380 100%)}
+.hero::before{opacity:.75;background:radial-gradient(1.6px 1.6px at 30px 40px,#fff,transparent),radial-gradient(1px 1px at 110px 90px,#fff,transparent),radial-gradient(1.8px 1.8px at 170px 30px,#ffe2a0,transparent),radial-gradient(1px 1px at 60px 100px,#cfe0ff,transparent);background-size:210px 130px}
+.hero h1{font-size:clamp(24px,3.6vw,38px);line-height:1.8;font-weight:700}.hero p{color:#dfe6f7}.hero-inner{z-index:2}
+.hero::after{content:"";position:absolute;top:0;bottom:0;left:2%;width:360px;z-index:1;pointer-events:none;background:url(nasser.jpg) center 12%/cover no-repeat;filter:blur(2.2px) saturate(.75);opacity:.55;-webkit-mask-image:radial-gradient(ellipse 50% 58% at 50% 38%,#000 22%,transparent 98%);mask-image:radial-gradient(ellipse 50% 58% at 50% 38%,#000 22%,transparent 98%)}
+@media(max-width:700px){.hero::after{left:0;right:0;width:auto;background-position:center 5%;opacity:.4;-webkit-mask-image:radial-gradient(ellipse 50% 62% at 50% 32%,#000 28%,transparent 98%);mask-image:radial-gradient(ellipse 50% 62% at 50% 32%,#000 28%,transparent 98%)}}
+footer{background:#0a1330}.logo{background:radial-gradient(circle at 30% 25%,var(--green2),var(--green))}

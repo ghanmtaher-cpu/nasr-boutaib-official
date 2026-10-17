@@ -1,9 +1,4 @@
-const CATEGORIES = [
-  "العقيدة والتوحيد", "الفقه والعبادات", "القرآن الكريم وعلومه",
-  "الحديث النبوي وعلومه", "السيرة النبوية", "التفسير",
-  "الفتاوى المعاصرة", "الأسرة والمجتمع", "الأخلاق والآداب",
-  "التاريخ الإسلامي", "البحوث والدراسات", "الردود العلمية"
-];
+const CATEGORIES = ["الإيمان والعقيدة","العبادات","السيرة النبوية","الأخلاق والتزكية","الأسرة والمجتمع","الشباب","الرد على الشبهات","قصص وعبر","المناسبات والمواسم"];
 
 const DEMO = [
   {id:"demo-1",title:"ما أهمية الإخلاص في العبادة؟",category:"العقيدة والتوحيد",summary:"الإخلاص هو أن يقصد المسلم بعمله وجه الله تعالى، وهو أصل مهم في العبادة.",body:"<p>الإخلاص من المعاني الأساسية في العبادة، ومعناه أن يقصد الإنسان بعبادته رضا الله تعالى.</p><h2>دليل من القرآن</h2><p>قال الله تعالى: ﴿وَمَا أُمِرُوا إِلَّا لِيَعْبُدُوا اللَّهَ مُخْلِصِينَ لَهُ الدِّينَ﴾ [البينة: 5].</p><div class='source'><strong>المصدر:</strong> القرآن الكريم، سورة البينة، الآية 5. المثال تعليمي ويُراجع قبل النشر.</div>",published_at:null,status:"published"},
@@ -33,7 +28,7 @@ function initSupabase() {
 async function loadArticles() {
   if (!supabaseClient) { allArticles = DEMO; return; }
   const { data, error } = await supabaseClient.from("articles")
-    .select("id,title,category,summary,body,question_text,content_type,published_at,status,created_at")
+    .select("id,title,category,summary,body,question_text,content_type,published_at,status,created_at,video_url")
     .eq("status", "published")
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
@@ -57,6 +52,7 @@ function buildCategories() {
     b.addEventListener("click", () => filterCategory(b.dataset.category))
   ));
 }
+function fmtDate(d){try{const x=new Date(d);return x.toLocaleDateString("ar",{day:"numeric",month:"long",year:"numeric",calendar:"gregory"})+" م — "+x.toLocaleDateString("ar-SA-u-ca-islamic-umalqura",{day:"numeric",month:"long",year:"numeric"})}catch(e){return ""}}
 function render() {
   const q = norm(query);
   const list = allArticles.filter(a =>
@@ -67,7 +63,7 @@ function render() {
   const count = document.getElementById("resultCount");
   const el = document.getElementById("questionList");
   if (!title || !count || !el) return;
-  title.textContent = q ? `نتائج البحث عن: ${query}` : activeCategory === "الكل" ? "أحدث الفتاوى والموضوعات" : activeCategory;
+  title.textContent = q ? `نتائج البحث عن: ${query}` : activeCategory === "الكل" ? "أحدث المواد الدعوية" : activeCategory;
   count.textContent = `${list.length} موضوع`;
   if (!list.length) {
     el.innerHTML = loadFailed
@@ -77,8 +73,8 @@ function render() {
   }
   el.innerHTML = list.map(a => {
     const date = a.published_at || a.created_at;
-    const dateText = date ? new Date(date).toLocaleDateString("ar-EG") : (String(a.id).startsWith("demo-") ? "مثال توضيحي" : "");
-    return `<article class="question-card"><div class="meta">${/^\d+$/.test(String(a.id)) ? `<span class="num">رقم ${esc(a.id)}</span>` : ""}<span class="pill">${esc(a.category)}</span><span>${esc(dateText)}</span></div><h3><a href="article.html?id=${encodeURIComponent(a.id)}">${esc(a.title)}</a></h3><p>${esc(a.summary || "اقرأ الموضوع كاملًا.")}</p><a class="read-more" href="article.html?id=${encodeURIComponent(a.id)}">قراءة الموضوع ←</a></article>`;
+    const dateText = date ? fmtDate(date) : (String(a.id).startsWith("demo-") ? "مثال توضيحي" : "");
+    return `<article class="question-card"><div class="meta">${/^\d+$/.test(String(a.id)) ? `<span class="num">رقم ${esc(a.id)}</span>` : ""}<span class="pill">${esc(a.category)}</span><span>${esc(dateText)}</span>${a.video_url ? '<span class="pill alt">▶ فيديو</span>' : ""}</div><h3><a href="article.html?id=${encodeURIComponent(a.id)}">${esc(a.title)}</a></h3><p>${esc(a.summary || (a.video_url ? "شاهد الفيديو كاملًا." : "اقرأ الموضوع كاملًا."))}</p><a class="read-more" href="article.html?id=${encodeURIComponent(a.id)}">قراءة الموضوع ←</a></article>`;
   }).join("");
 }
 function filterCategory(c) {

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#123d32"><title>إدارة الموقع | ناصر بوطيب</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+</head>
+<body>
+<div class="topbar"><div class="wrap"><span>الموقع الدعوي الرسمي</span><span><a href="https://wa.me/201060774432" target="_blank" rel="noopener">واتساب</a><a href="https://www.facebook.com/nasr.s.yd.bwal.asy" target="_blank" rel="noopener">فيسبوك</a></span></div></div>
+<header><div class="header-inner"><a class="brand" href="index.html"><span class="logo">۞</span><span><strong class="brand-name">إدارة ناصر بوطيب</strong><small class="brand-tag">لوحة إدارة المحتوى</small></span></a><nav><a href="index.html">عرض الموقع</a></nav></div></header>
+<main>
+<div class="notice"><strong>تنبيه أمني:</strong> لا يستطيع إدارة الموقع إلا حساب أُضيف إلى جدول admin_users في Supabase. لا تضع مفتاح service_role في ملفات الموقع.</div>
+<section class="side-card" id="loginPanel"><h2>تسجيل الدخول للإدارة</h2>
+<form id="loginForm" class="form-grid"><div class="field"><label for="email">البريد الإلكتروني</label><input id="email" type="email" required autocomplete="username"></div>
+<div class="field"><label for="password">كلمة المرور</label><input id="password" type="password" required autocomplete="current-password"></div>
+<div class="field full"><button class="primary" id="loginBtn">تسجيل الدخول</button><p id="loginStatus" class="form-note" role="status"></p></div></form></section>
+<section class="side-card hidden" id="editorPanel"><div class="section-head"><div><h2>إضافة / تعديل مقال</h2><p>احفظ المحتوى كمسودة، ولا تنشره قبل التحقق من المراجع والمراجعة اللازمة.</p></div><button type="button" class="outline" id="logoutBtn">تسجيل الخروج</button></div>
+<form id="articleForm" class="form-grid"><input id="articleId" type="hidden">
+<div class="field full"><label for="title">عنوان المقال</label><input id="title" maxlength="200" required></div>
+<div class="field"><label for="category">القسم</label><select id="category"></select></div>
+<div class="field"><label>حالة المقال الحالية</label><div id="statusBadge" class="pill">مقال جديد (لم يُحفظ بعد)</div><select id="status" hidden><option value="draft">مسودة</option><option value="published">منشور</option></select></div>
+<div class="field"><label for="ctype">نوع المحتوى</label><select id="ctype"><option value="article">مقال</option><option value="video">مرئية</option><option value="lesson">درس</option><option value="fatwa">فتوى منقولة عن عالم</option><option value="research">بحث علمي</option><option value="reply">رد علمي</option></select></div>
+<div class="field"><label for="review">حالة المراجعة</label><select id="review"><option value="pending">لم تُراجع</option><option value="reviewed">روجعت</option></select></div>
+<div class="field full"><label for="author">الكاتب أو ناقل الإجابة</label><input id="author" maxlength="200"></div>
+<div class="field full"><label for="qtext">نص السؤال</label><textarea id="qtext" style="min-height:80px"></textarea></div>
+<div class="field full"><label for="summary">ملخص المقال (اختياري)</label><textarea id="summary" maxlength="1000" style="min-height:75px"></textarea></div>
+<div class="field full"><label for="body">نص الإجابة (HTML أساسي) — اتركه فارغًا إن كان المنشور فيديو فقط</label><textarea id="body" style="min-height:240px" placeholder="استخدم فقرات مثل &lt;p&gt;النص&lt;/p&gt; وعناوين مثل &lt;h2&gt;العنوان&lt;/h2&gt;. لا تلصق أكواد JavaScript."></textarea></div>
+<div class="field full"><label for="vurl">رابط الفيديو</label><input id="vurl" type="url" placeholder="https://..."></div>
+<div class="field full"><label for="vfile">أو ارفع فيديو من هاتفك (حتى 50 ميجابايت)</label><input id="vfile" type="file" accept="video/*"><small>يحتاج هذا الخيار إلى تهيئة مساحة videos وسياسات الرفع في Supabase.</small></div>
+<div class="field full"><label for="sources">المصادر والمراجع (سطر لكل مصدر)</label><textarea id="sources" style="min-height:110px"></textarea></div>
+<div class="field full"><button type="submit" class="primary" id="saveBtn" data-status="published">حفظ ونشر المقال</button> <button type="submit" class="outline" id="draftBtn" data-status="draft">حفظ كمسودة</button> <button type="button" class="outline" id="newBtn">مقال جديد / إلغاء التعديل</button><p id="saveStatus" class="form-note" role="status"></p></div>
+</form></section>
+<section class="side-card hidden" id="articlesPanel"><h2>المقالات المحفوظة</h2><button type="button" class="outline" id="exportBtn">تصدير نسخة احتياطية</button><div id="articlesList"></div></section>
+</main>
+<script src="config.js"></script>
+<script>
+"use strict";
+const CATS=["الإيمان والعقيدة","العبادات","السيرة النبوية","الأخلاق والتزكية","الأسرة والمجتمع","الشباب","الرد على الشبهات","قصص وعبر","المناسبات والمواسم"];
+const cfg=window.SITE_CONFIG||{}; let sb=null, currentUser=null, articles=[];
+const $=id=>document.getElementById(id);
+$("category").innerHTML=CATS.map(c=>`<option value="${c.replace(/"/g,"&quot;")}">${c}</option>`).join("");
+function setStatus(id,msg){$(id).textContent=msg||"";}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function setBusy(b){["loginBtn","saveBtn","draftBtn","logoutBtn","newBtn"].forEach(id=>{if($(id))$(id).disabled=b;});}
+function showLogin(msg=""){ $("loginPanel").classList.remove("hidden"); $("editorPanel").classList.add("hidden"); $("articlesPanel").classList.add("hidden"); setStatus("loginStatus",msg); }
+function showAdmin(){ $("loginPanel").classList.add("hidden"); $("editorPanel").classList.remove("hidden"); $("articlesPanel").classList.remove("hidden"); }
+async function verifyAdmin(){
+  if(!sb || !currentUser) return false;
+  // RLS must restrict this table to authorized admins. A signed-in account alone is not enough.
+  const {data,error}=await sb.from("admin_users").select("user_id").eq("user_id",currentUser.id).maybeSingle();
+  if(error){console.error("Admin membership check failed:",error);return false;}
+  return !!data;
+}
+async function refresh(){
+  setStatus("saveStatus","جارٍ تحميل المقالات...");
+  const {data,error}=await sb.from("articles").select("*").order("created_at",{ascending:false});
+  if(error){$("articlesList").textContent="تعذر تحميل المقالات. تحقق من سياسات RLS في Supabase. التفاصيل: "+error.message;setStatus("saveStatus","");return;}
+  articles=data||[];
+  $("articlesList").innerHTML=articles.map(a=>`<div class="question-card"><strong>${esc(a.title)}</strong><p>${esc(a.category)} — ${a.status==="published"?"منشور":"مسودة"} — ${a.review_status==="reviewed"?"تمت المراجعة":"لم تُراجع"}</p><button type="button" class="outline" data-edit="${esc(a.id)}">تعديل</button> <button type="button" class="outline" data-delete="${esc(a.id)}">حذف</button> <button type="button" class="outline" data-toggle="${esc(a.id)}">${a.status==="published"?"إلغاء النشر":"نشر"}</button></div>`).join("")||"لا توجد مقالات بعد.";
+  $("articlesList").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>editArticle(b.dataset.edit)));
+  $("articlesList").querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>deleteArticle(b.dataset.delete)));
+  $("articlesList").querySelectorAll("[data-toggle]").forEach(b=>b.addEventListener("click",()=>toggleStatus(b.dataset.toggle)));
+  setStatus("saveStatus","");
+}
+function badge(){const s=$("status").value;$("statusBadge").textContent=$("articleId").value?(s==="published"?"منشور — يراه الزوار":"مسودة — لا يراها الزوار"):"مقال جديد (لم يُحفظ بعد)";}
+async function toggleStatus(id){
+  const a=articles.find(x=>String(x.id)===String(id));if(!a)return;
+  if(!await verifyAdmin()){alert("لا توجد صلاحية إدارة فعّالة. سجّل الدخول مجددًا.");return;}
+  const to=a.status==="published"?"draft":"published";
+  if(to==="published"&&a.review_status!=="reviewed"&&!confirm("المقال غير محدد كمُراجع. هل تريد نشره رغم ذلك؟"))return;
+  const {data,error}=await sb.from("articles").update({status:to,published_at:a.published_at||(to==="published"?new Date().toISOString():null),updated_at:new Date().toISOString()}).eq("id",id).select("id,status").maybeSingle();
+  if(error||!data||data.status!==to){alert("لم يتغير وضع المقال: "+(error?error.message:"لا صلاحية أو المقال غير موجود"));return;}
+  await refresh();setStatus("saveStatus",to==="published"?"تم نشر المقال. يظهر الآن للزوار.":"أُلغي نشر المقال. لم يعد ظاهرًا للزوار.");
+}
+function resetForm(){
+  $("articleForm").reset(); $("articleId").value=""; $("status").value="draft"; $("ctype").value="article"; $("review").value="pending"; $("category").selectedIndex=0; setStatus("saveStatus","نموذج مقال جديد.");badge();
+}
+$("loginForm").addEventListener("submit",async e=>{
+  e.preventDefault(); setStatus("loginStatus","");
+  if(!cfg.supabaseUrl||!cfg.supabaseAnonKey||cfg.supabaseAnonKey==="PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE"||!window.supabase){showLogin("بيانات الاتصال غير مكتملة في config.js.");return;}
+  setBusy(true);
+  try{
+    sb=sb||window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+    const {data,error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+    if(error){showLogin("فشل تسجيل الدخول. تحقق من البريد وكلمة المرور في Supabase Auth.");return;}
+    currentUser=data.user;
+    if(!await verifyAdmin()){
+      await sb.auth.signOut(); currentUser=null;
+      showLogin("تم تسجيل الدخول، لكن هذا الحساب ليس ضمن admin_users أو أن سياسة قراءة جدول الإدارة غير مضبوطة. لن تُفتح لوحة الإدارة.");
+      return;
+    }
+    showAdmin(); await refresh();
+  }catch(err){console.error(err);showLogin("حدث خطأ أثناء الاتصال بـ Supabase. تحقق من الإنترنت والإعدادات.");}
+  finally{setBusy(false);}
+});
+$("articleForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!sb||!currentUser||!await verifyAdmin()){showLogin("انتهت الجلسة أو لا تملك صلاحية الإدارة. سجّل الدخول مجددًا.");return;}
+  if(((e.submitter&&e.submitter.dataset.status)==="published")&&$("review").value!=="reviewed"&&!confirm("المقال غير محدد كمُراجع. هل تريد نشره رغم ذلك؟"))return;
+  const id=$("articleId").value;
+  const old=articles.find(a=>String(a.id)===String(id));
+  const nextStatus=(e.submitter&&e.submitter.dataset.status)==="published"?"published":"draft";
+  const row={
+    title:$("title").value.trim(),category:$("category").value,status:nextStatus,
+    content_type:$("ctype").value,review_status:$("review").value,
+    author:$("author").value.trim()||null,question_text:$("qtext").value.trim()||null,
+    summary:$("summary").value.trim(),body:$("body").value.trim(),
+    video_url:$("vurl").value.trim()||null,sources:$("sources").value.trim()||null,
+    updated_at:new Date().toISOString(),
+    published_at:old?.published_at||(nextStatus==="published"?new Date().toISOString():null),
+    author_id:old?.author_id||currentUser.id
+  };
+  if(!row.body&&!row.video_url){setStatus("saveStatus","اكتب نص المقال، أو أضف رابط فيديو، أو ارفع فيديو. يكفي واحد منهما.");return;}
+  setBusy(true);setStatus("saveStatus","جارٍ الحفظ...");
+  try{
+    const result=id?await sb.from("articles").update(row).eq("id",id).select("id,status").maybeSingle():await sb.from("articles").insert(row).select("id,status").single();
+    if(result.error){setStatus("saveStatus","تعذر الحفظ: "+result.error.message);return;}
+    if(!result.data||result.data.status!==nextStatus){setStatus("saveStatus","لم يُحفظ المقال فعليًا، ربما لا تملك صلاحية أو انتهت الجلسة. سجّل الدخول من جديد وحاول مرة أخرى.");return;}
+    resetForm(); await refresh(); setStatus("saveStatus",nextStatus==="published"?"تم حفظ المقال ونشره. يظهر الآن للزوار.":"تم حفظه كمسودة. لا يظهر للزوار.");
+  }catch(err){console.error(err);setStatus("saveStatus","حدث خطأ غير متوقع أثناء الحفظ.");}
+  finally{setBusy(false);}
+});
+function editArticle(id){
+  const a=articles.find(x=>String(x.id)===String(id));if(!a)return;
+  $("articleId").value=a.id;$("title").value=a.title||"";$("category").value=a.category||CATS[0];
+  $("status").value=a.status||"draft";$("summary").value=a.summary||"";$("body").value=a.body||"";
+  $("ctype").value=a.content_type||"article";$("review").value=a.review_status||"pending";
+  $("author").value=a.author||"";$("qtext").value=a.question_text||"";$("sources").value=a.sources||"";
+  $("vurl").value=a.video_url||"";$("vfile").value="";setStatus("saveStatus","أنت تعدّل المقال رقم "+a.id+".");
+  badge();window.scrollTo({top:0,behavior:"smooth"});
+}
+async function deleteArticle(id){
+  if(!await verifyAdmin()){alert("لا توجد صلاحية إدارة فعّالة. سجّل الدخول مجددًا.");return;}
+  if(!confirm("هل تريد حذف هذا المقال نهائيًا؟ لا يمكن التراجع عن الحذف."))return;
+  const {error}=await sb.from("articles").delete().eq("id",id);
+  if(error){alert("تعذر الحذف: "+error.message);return;}
+  await refresh();
+}
+$("logoutBtn").addEventListener("click",async()=>{if(sb)await sb.auth.signOut();currentUser=null;location.reload();});
+$("newBtn").addEventListener("click",resetForm);
+$("vfile").addEventListener("change",async e=>{
+  const f=e.target.files?.[0];if(!f)return;
+  if(!sb||!currentUser||!await verifyAdmin()){alert("سجّل الدخول بحساب الإدارة أولًا.");e.target.value="";return;}
+  if(f.size>52428800){alert("حجم الفيديو أكبر من 50 ميجابايت. استخدم رابط فيديو بدلًا منه.");e.target.value="";return;}
+  const safeName=f.name.replace(/[^\w.\-]/g,"_");
+  const path=`${currentUser.id}/${Date.now()}-${safeName}`;
+  e.target.disabled=true;setStatus("saveStatus","جارٍ رفع الفيديو...");
+  try{
+    const {error}=await sb.storage.from("videos").upload(path,f,{contentType:f.type||"video/mp4",upsert:false});
+    if(error){alert("تعذر رفع الفيديو: "+error.message);return;}
+    $("vurl").value=sb.storage.from("videos").getPublicUrl(path).data.publicUrl;
+    alert("تم رفع الفيديو. اضغط «حفظ المقال» لحفظ رابطه داخل المقال.");
+  }catch(err){console.error(err);alert("حدث خطأ أثناء رفع الفيديو.");}
+  finally{e.target.disabled=false;setStatus("saveStatus","");}
+});
+$("exportBtn").addEventListener("click",()=>{
+  const blob=new Blob([JSON.stringify({exported:new Date().toISOString(),articles},null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="nasr-site-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+(async()=>{
+  const c=window.SITE_CONFIG||{};
+  if(!c.supabaseUrl||!c.supabaseAnonKey||c.supabaseAnonKey==="PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE"||!window.supabase){showLogin("أكمل إعداد config.js أولًا.");return;}
+  sb=window.supabase.createClient(c.supabaseUrl,c.supabaseAnonKey);
+  try{
+    const {data,error}=await sb.auth.getSession();
+    if(error||!data?.session)return;
+    currentUser=data.session.user;
+    if(await verifyAdmin()){showAdmin();await refresh();}
+    else{await sb.auth.signOut();currentUser=null;showLogin("الجلسة الحالية ليست لحساب إدارة مصرحًا به.");}
+  }catch(err){console.error(err);showLogin("تعذر التحقق من جلسة الإدارة.");}
+})();
+</script></body></html>
